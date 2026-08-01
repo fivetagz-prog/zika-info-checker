@@ -162,22 +162,21 @@
         }
 
         .avatar {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
+            width: 180px;
+            height: 320px;
+            border-radius: 16px;
             object-fit: cover;
             border: 4px solid transparent;
             background: var(--accent-gradient) border-box;
-            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: destination-out;
-            mask-composite: exclude;
+            -webkit-mask: none;
+            mask: none;
             padding: 4px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .avatar-container:hover .avatar {
-            transform: scale(1.08) rotate(5deg);
+            transform: scale(1.05);
         }
 
         .names {
@@ -386,7 +385,7 @@
         <div class="card-content">
             
             <div class="avatar-container animate-up delay-1">
-                <img src="" alt="Avatar Thumbnail" class="avatar" id="avatarImg" style="background-image: var(--accent-gradient);">
+                <img src="" alt="Avatar Thumbnail" class="avatar" id="avatarImg">
             </div>
             
             <div class="names animate-up delay-2">
