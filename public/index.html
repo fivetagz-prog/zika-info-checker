@@ -1,0 +1,66 @@
+// Change all API calls from roproxy to your Vercel backend
+// Format: /api/proxy/<service>/<endpoint>
+
+const API_BASE = '/api/proxy';
+
+async function fetchUserData() {
+    const usernameInput = document.getElementById('usernameInput').value.trim();
+    const errorMsg = document.getElementById('error-msg');
+    const profileCard = document.getElementById('profileCard');
+    const loader = document.getElementById('loader');
+    
+    if (!usernameInput) return;
+
+    errorMsg.style.display = 'none';
+    profileCard.classList.remove('show-card');
+    profileCard.style.display = 'none';
+    loader.style.display = 'block';
+    
+    document.getElementById('badgesContainer').innerHTML = '';
+    document.getElementById('groupsContainer').innerHTML = '';
+
+    try {
+        // 1. Get User ID from Username
+        const userLookupRes = await fetch(`${API_BASE}/users/v1/usernames/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usernames: [usernameInput], excludeBannedUsers: false })
+        });
+        
+        const userData = await userLookupRes.json();
+        if (!userData.data || userData.data.length === 0) {
+            throw new Error("User not found");
+        }
+        
+        const userId = userData.data[0].id;
+        
+        // 2. Fetch all details concurrently via your proxy
+        const [infoRes, followersRes, followingRes, friendsRes, avatarRes, groupsRes, badgesRes] = await Promise.all([
+            fetch(`${API_BASE}/users/v1/users/${userId}`),
+            fetch(`${API_BASE}/friends/v1/users/${userId}/followers/count`),
+            fetch(`${API_BASE}/friends/v1/users/${userId}/followings/count`),
+            fetch(`${API_BASE}/friends/v1/users/${userId}/friends/count`),
+            fetch(`${API_BASE}/thumbnails/v1/users/avatar?userIds=${userId}&size=420x420&format=Png&isCircular=true`),
+            fetch(`${API_BASE}/groups/v1/users/${userId}/groups/roles`),
+            fetch(`${API_BASE}/badges/v1/users/${userId}/badges?limit=10&sortOrder=Desc`)
+        ]);
+
+        const [info, followers, following, friends, avatar, groups, badges] = await Promise.all([
+            infoRes.json(), followersRes.json(), followingRes.json(), 
+            friendsRes.json(), avatarRes.json(), groupsRes.json(), badgesRes.json()
+        ]);
+
+        loader.style.display = 'none';
+
+        // 3. Populate UI (same as before)
+        document.getElementById('avatarImg').src = avatar.data[0].imageUrl;
+        document.getElementById('displayName').innerText = info.displayName;
+        document.getElementById('usernameStr').innerText = info.name;
+        document.getElementById('userIdStr').innerText = info.id;
+        
+        animateValue(document.getElementById('followersCount'), 0, followers.count, 1500);
+        animateValue(document.getElementById('followingCount'), 0, following.count, 1500);
+        animateValue(document.getElementById('friendsCount'), 0, friends.count, 1500);
+        
+        const joinDate = new Date(info.created);
+        document.getElementById('
