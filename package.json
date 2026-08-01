@@ -1,5 +1,5 @@
 {
-  "name": "roblox-lookup-proxy",
+  "name": "roblox-lookup",
   "version": "1.0.0",
-  "dependencies": {}
+  "private": true
 }
