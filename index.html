@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox User Lookup Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --glass-bg: rgba(30, 32, 40, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --accent-glow: 0 0 20px rgba(79, 172, 254, 0.4);
+            --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #1a1c29 0%, var(--bg-color) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 20px;
+            overflow-x: hidden;
+        }
+
+        .search-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            padding: 10px;
+            border-radius: 50px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+
+        .search-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), var(--accent-glow);
+            border-color: rgba(79, 172, 254, 0.3);
+        }
+
+        input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            padding: 12px 20px;
+            outline: none;
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        button {
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--accent-glow);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.6);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .loader {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--glass-border);
+            border-top-color: #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        #error-msg {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff4d4f;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            padding: 12px 25px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 600;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        .profile-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.05) 0%, transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+            animation: slowRotate 20s linear infinite;
+        }
+
+        .card-content {
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .avatar {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid transparent;
+            background: var(--accent-gradient) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            padding: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .avatar-container:hover .avatar {
+            transform: scale(1.08) rotate(5deg);
+        }
+
+        .names {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .display-name {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .username {
+            font-size: 16px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 20px 10px;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(79, 172, 254, 0.5);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .info-section {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s ease;
+        }
+
+        .info-section:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .info-section h3 {
+            font-size: 13px;
+            color: #4facfe;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-section h3::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px 15px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .info-grid strong {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .blurb-text {
+            grid-column: 1 / -1;
+            background: rgba(255,255,255,0.02);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 5px;
+            line-height: 1.6;
+            font-style: italic;
+            border-left: 3px solid #4facfe;
+        }
+
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #e2e8f0;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: default;
+        }
+
+        .chip:hover {
+            background: var(--accent-gradient);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .none-text {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .animate-up {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .profile-card.show-card .animate-up {
+            animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slowRotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-container">
+        <input type="text" id="usernameInput" placeholder="Enter Roblox Username..." onkeypress="handleKeyPress(event)">
+        <button onclick="fetchUserData()">Search</button>
+    </div>
+    
+    <div class="loader" id="loader"></div>
+    <div id="error-msg">User not found or API error occurred.</div>
+
+    <div class="profile-card" id="profileCard">
+        <div class="card-content">
+            
+            <div class="avatar-container animate-up delay-1">
+                <img src="" alt="Avatar Thumbnail" class="avatar" id="avatarImg" style="background-image: var(--accent-gradient);">
+            </div>
+            
+            <div class="names animate-up delay-2">
+                <h2 class="display-name" id="displayName">Display Name</h2>
+                <p class="username">@<span id="usernameStr">username</span></p>
+            </div>
+
+            <div class="stats-grid animate-up delay-3">
+                <div class="stat-box">
+                    <div class="stat-value" id="followersCount">0</div>
+                    <div class="stat-label">Followers</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="followingCount">0</div>
+                    <div class="stat-label">Following</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="friendsCount">0</div>
+                    <div class="stat-label">Friends</div>
+                </div>
+            </div>
+
+            <div class="info-section animate-up delay-4">
+                <h3>General Info</h3>
+                <div class="info-grid">
+                    <strong>User ID:</strong> <span id="userIdStr">...</span>
+                    <strong>Joined:</strong> <span id="joinDateStr">...</span>
+                    <strong>Account Age:</strong> <span id="accountAgeStr">...</span>
+                    <div class="blurb-text" id="blurbStr">...</div>
+                </div>
+            </div>
+
+            <div class="info-section animate-up delay-5">
+                <h3>Latest Badges (Top 10)</h3>
+                <div class="chip-container" id="badgesContainer"></div>
+            </div>
+
+            <div class="info-section animate-up delay-5">
+                <h3>Groups Joined</h3>
+                <div class="chip-container" id="groupsContainer"></div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                fetchUserData();
+            }
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                obj.innerHTML = Math.floor(easeProgress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.innerHTML = end.toLocaleString();
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function calculateAge(joinDateString) {
+            const joinDate = new Date(joinDateString);
+            const now = new Date();
+            
+            const diffTime = Math.abs(now - joinDate);
+            const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const years = Math.floor(totalDays / 365.25);
+            let remainingDays = totalDays - Math.floor(years * 365.25);
+            const months = Math.floor(remainingDays / 30.44);
+            remainingDays = remainingDays - Math.floor(months * 30.44);
+            const weeks = Math.floor(remainingDays / 7);
+            const days = Math.floor(remainingDays % 7);
+            
+            return `${totalDays.toLocaleString()} Days (${years}Y, ${months}M, ${weeks}W, ${days}D)`;
+        }
+
+        async function fetchUserData() {
+            const usernameInput = document.getElementById('usernameInput').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+            const profileCard = document.getElementById('profileCard');
+            const loader = document.getElementById('loader');
+            
+            if (!usernameInput) return;
+
+            errorMsg.style.display = 'none';
+            profileCard.classList.remove('show-card');
+            profileCard.style.display = 'none';
+            loader.style.display = 'block';
+            
+            document.getElementById('badgesContainer').innerHTML = '';
+            document.getElementById('groupsContainer').innerHTML = '';
+
+            try {
+                const res = await fetch('/api/lookup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usernameInput })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error || 'API error');
+                }
+
+                const data = await res.json();
+
+                document.getElementById('avatarImg').src = data.avatarUrl;
+                document.getElementById('displayName').innerText = data.displayName;
+                document.getElementById('usernameStr').innerText = data.name;
+                document.getElementById('userIdStr').innerText = data.id;
+                
+                animateValue(document.getElementById('followersCount'), 0, data.followers, 1500);
+                animateValue(document.getElementById('followingCount'), 0, data.following, 1500);
+                animateValue(document.getElementById('friendsCount'), 0, data.friends, 1500);
+                
+                const joinDate = new Date(data.created);
+                document.getElementById('joinDateStr').innerText = joinDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                document.getElementById('accountAgeStr').innerText = calculateAge(data.created);
+                
+                const blurbEl = document.getElementById('blurbStr');
+                if (data.description) {
+                    blurbEl.innerText = `"${data.description}"`;
+                    blurbEl.style.display = 'block';
+                } else {
+                    blurbEl.style.display = 'none';
+                }
+
+                const groupsContainer = document.getElementById('groupsContainer');
+                if (data.groups && data.groups.length > 0) {
+                    data.groups.forEach((item, index) => {
+                        const chip = document.createElement('div');
+                        chip.className = 'chip';
+                        chip.style.animationDelay = `${0.5 + (index * 0.05)}s`;
+                        chip.innerText = item.group.name;
+                        groupsContainer.appendChild(chip);
+                    });
+                } else {
+                    groupsContainer.innerHTML = '<span class="none-text">User is not in any groups.</span>';
+                }
+
+                const badgesContainer = document.getElementById('badgesContainer');
+                if (data.badges && data.badges.length > 0) {
+                    data.badges.forEach((badge, index) => {
+                        const chip = document.createElement('div');
+                        chip.className = 'chip';
+                        chip.style.animationDelay = `${0.5 + (index * 0.05)}s`;
+                        chip.innerText = badge.name;
+                        badgesContainer.appendChild(chip);
+                    });
+                } else {
+                    badgesContainer.innerHTML = '<span class="none-text">No badges found.</span>';
+                }
+
+                profileCard.style.display = 'flex';
+                void profileCard.offsetWidth; 
+                profileCard.classList.add('show-card');
+
+            } catch (error) {
+                console.error(error);
+                loader.style.display = 'none';
+                errorMsg.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
